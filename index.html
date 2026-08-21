@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>桌面悬浮待办与番茄钟组件</title>
+    <style>
+      /* 莫兰迪极简配调与基础重置 */
+      :root {
+        --bg-color: rgba(244, 241, 234, 0.95);
+        --card-bg: rgba(255, 255, 255, 0.88);
+        --text-main: #4a4a4a;
+        --text-muted: #8c857b;
+        --accent-color: #9bb09e; /* 莫兰迪鼠尾草绿 */
+        --accent-hover: #889f8b;
+        --accent-break: #d2a393; /* 莫兰迪柔橘红 */
+        --border-color: rgba(210, 203, 192, 0.4);
+        --shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.12);
+        --radius: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      }
+
+      body {
+        background-color: #e5ece9; /* 模拟桌面背景 */
+        background-image: radial-gradient(#cbd5d1 1px, transparent 1px);
+        background-size: 16px 16px;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        justify-content: flex-end;
+        padding: 20px;
+      }
+
+      /* 悬浮小组件容器 */
+      .widget-card {
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        width: 300px;
+        background: var(--bg-color);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 9999;
+      }
+
+      /* 顶部拖拽栏 */
+      .drag-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: move;
+        padding-bottom: 2px;
+      }
+
+      .app-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: var(--accent-color);
+        transition: background-color 0.3s;
+      }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .icon-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-main);
+      }
+
+      /* 番茄钟核心区域 */
+      .timer-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        border: 1px solid var(--border-color);
+      }
+
+      .current-task-tag {
+        font-size: 12px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+      }
+
+      .timer-display {
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: 1px;
+        font-variant-numeric: tabular-nums;
+        margin: 4px 0 10px 0;
+      }
+
+      .timer-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn {
+        border: none;
+        outline: none;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background-color: var(--accent-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-main);
+      }
+
+      /* 待办列表区域 */
+      .todo-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: opacity 0.2s ease;
+      }
+
+      .todo-input {
+        width: 100%;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-main);
+        outline: none;
+      }
+
+      .todo-input:focus {
+        border-color: var(--accent-color);
+      }
+
+      .todo-list {
+        list-style: none;
+        max-height: 160px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .todo-item {
+        background: var(--card-bg);
+        padding: 8px 10px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid var(--border-color);
+        font-size: 12px;
+      }
+
+      .todo-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .checkbox {
+        cursor: pointer;
+        accent-color: var(--accent-color);
+      }
+
+      .todo-text.completed {
+        text-decoration: line-through;
+        color: var(--text-muted);
+      }
+
+      .todo-actions {
+        display: flex;
+        gap: 4px;
+      }
+
+      .small-btn {
+        font-size: 11px;
+        padding: 2px 4px;
+        border-radius: 4px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--text-muted);
+      }
+
+      .small-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-main);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="widget-card" id="widgetCard">
+      <!-- 顶部拖拽 Header -->
+      <div class="drag-header" id="dragHeader">
+        <div class="app-title">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="headerTitle">专注时段</span>
+        </div>
+        <div>
+          <button class="icon-btn" id="toggleCollapseBtn" title="折叠/展开">
+            ▼
+          </button>
+        </div>
+      </div>
+
+      <!-- 番茄钟面板 -->
+      <div class="timer-section">
+        <div class="current-task-tag" id="currentTaskDisplay">
+          🎯 准备开始专注
+        </div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-actions">
+          <button class="btn btn-primary" id="startBtn">开始</button>
+          <button class="btn btn-secondary" id="resetBtn">重置</button>
+        </div>
+      </div>
+
+      <!-- 待办列表 -->
+      <div class="todo-section" id="todoSection">
+        <input
+          type="text"
+          class="todo-input"
+          id="todoInput"
+          placeholder="+ 添加待办，按回车保存..."
+        />
+        <ul class="todo-list" id="todoList"></ul>
+      </div>
+    </div>
+
+    <script>
+      // 状态定义
+      let WORK_TIME = 25 * 60,
+        BREAK_TIME = 5 * 60;
+      let timeLeft = WORK_TIME,
+        timerId = null,
+        isWorking = true,
+        isCollapsed = false;
+      let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+
+      const timerDisplay = document.getElementById('timerDisplay');
+      const startBtn = document.getElementById('startBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const currentTaskDisplay = document.getElementById('currentTaskDisplay');
+      const statusDot = document.getElementById('statusDot');
+      const headerTitle = document.getElementById('headerTitle');
+      const todoInput = document.getElementById('todoInput');
+      const todoList = document.getElementById('todoList');
+      const todoSection = document.getElementById('todoSection');
+      const toggleCollapseBtn = document.getElementById('toggleCollapseBtn');
+      const widgetCard = document.getElementById('widgetCard');
+      const dragHeader = document.getElementById('dragHeader');
+
+      // 1. 番茄钟倒计时逻辑
+      function updateDisplay() {
+        const mins = Math.floor(timeLeft / 60)
+          .toString()
+          .padStart(2, '0');
+        const secs = (timeLeft % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${mins}:${secs}`;
+      }
+
+      function startTimer() {
+        if (timerId) {
+          clearInterval(timerId);
+          timerId = null;
+          startBtn.textContent = '继续';
+          return;
+        }
+        startBtn.textContent = '暂停';
+        timerId = setInterval(() => {
+          timeLeft--;
+          updateDisplay();
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            timerId = null;
+            isWorking = !isWorking;
+            timeLeft = isWorking ? WORK_TIME : BREAK_TIME;
+            statusDot.style.backgroundColor = isWorking
+              ? 'var(--accent-color)'
+              : 'var(--accent-break)';
+            headerTitle.textContent = isWorking ? '专注时段' : '小憩时间';
+            alert(
+              isWorking
+                ? '🔔 休息结束，开始专注！'
+                : '🎉 专注完成，休息 5 分钟！'
+            );
+            startBtn.textContent = '开始';
+            updateDisplay();
+          }
+        }, 1000);
+      }
+
+      // 2. 待办事项管理
+      function renderTodos() {
+        localStorage.setItem('todos', JSON.stringify(todos));
+        todoList.innerHTML = '';
+        todos.forEach((t, i) => {
+          const li = document.createElement('li');
+          li.className = 'todo-item';
+          li.innerHTML = `
+          <div class="todo-left">
+            <input type="checkbox" class="checkbox" ${
+              t.completed ? 'checked' : ''
+            } data-i="${i}">
+            <span class="todo-text ${t.completed ? 'completed' : ''}">${
+            t.text
+          }</span>
+          </div>
+          <div class="todo-actions">
+            <button class="small-btn" onclick="setFocus('${
+              t.text
+            }')" title="设为目标">🎯</button>
+            <button class="small-btn" onclick="delTodo(${i})" title="删除">✕</button>
+          </div>`;
+          todoList.appendChild(li);
+        });
+      }
+
+      window.setFocus = (text) => {
+        currentTaskDisplay.textContent = `🎯 ${text}`;
+      };
+      window.delTodo = (i) => {
+        todos.splice(i, 1);
+        renderTodos();
+      };
+
+      todoInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && todoInput.value.trim()) {
+          todos.push({ text: todoInput.value.trim(), completed: false });
+          todoInput.value = '';
+          renderTodos();
+        }
+      });
+
+      todoList.addEventListener('change', (e) => {
+        if (e.target.dataset.i !== undefined) {
+          todos[e.target.dataset.i].completed = e.target.checked;
+          renderTodos();
+        }
+      });
+
+      // 3. 展开 / 折叠小组件面板
+      toggleCollapseBtn.addEventListener('click', () => {
+        isCollapsed = !isCollapsed;
+        todoSection.classList.toggle('hidden', isCollapsed);
+        toggleCollapseBtn.textContent = isCollapsed ? '▲' : '▼';
+      });
+
+      // 4. 网页内悬浮卡片自由拖拽逻辑
+      let isDragging = false,
+        offsetX = 0,
+        offsetY = 0;
+      dragHeader.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        offsetX = e.clientX - widgetCard.offsetLeft;
+        offsetY = e.clientY - widgetCard.offsetTop;
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        widgetCard.style.left = e.clientX - offsetX + 'px';
+        widgetCard.style.top = e.clientY - offsetY + 'px';
+        widgetCard.style.right = 'auto'; // 取消默认靠右对齐
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
+      // 初始化渲染
+      startBtn.addEventListener('click', startTimer);
+      resetBtn.addEventListener('click', () => {
+        clearInterval(timerId);
+        timerId = null;
+        timeLeft = WORK_TIME;
+        startBtn.textContent = '开始';
+        updateDisplay();
+      });
+
+      updateDisplay();
+      renderTodos();
+    </script>
+  </body>
+</html>
