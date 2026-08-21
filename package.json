@@ -7,6 +7,16 @@
     "start": "electron .",
     "dist": "electron-builder --win Portable"
   },
+  "files": [
+    "main.js",
+    "index.html"
+  ],
+  "build": {
+    "appId": "com.pomodoro.widget",
+    "win": {
+      "target": "portable"
+    }
+  },
   "devDependencies": {
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1"
