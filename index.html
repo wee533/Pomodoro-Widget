@@ -1,54 +1,51 @@
 <style>
   :root {
-    /* 使用你喜欢的配色，这里用你截图里的风格 */
-    --accent-color: #9bb09e; /* 开始按钮绿色 */
-    --reset-color: #f1f3f5;   /* 重置按钮灰色 */
+    --accent-color: #9bb09e;
+    --reset-color: #f1f3f5;
     --text-main: #4a4a4a;
     --text-muted: #8c857b;
-    --card-bg: #f8f6f0;      /* 卡片背景色，米白色 */
-    
-    /* 增加一个强大的阴影，让它在透明背景上突显出来 */
-    --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
+    --card-bg: #f8f6f0;
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 
-  /* --- 核心：让 Electron 的网页背景完全透明 --- */
+  /* 基础与防溢出设置 */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html, body {
     background-color: transparent !important;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* 隐藏滚动条 */
-    width: 100%;
-    height: 100%;
-    /* 确保整个 body 是可点击的穿透区域，点击 body 不会移动窗口，只有点击卡片才能移动 */
-    -webkit-app-region: no-drag; 
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-app-region: no-drag;
   }
 
-  /* 你的番茄钟主卡片 */
+  /* 番茄钟卡片容器：去掉 absolute，改为居中自适应 */
   .widget-container {
-    position: absolute;
-    top: 20px; /* 留出一点边距 */
-    left: 20px;
-    width: 300px; /* 固定宽度 */
+    width: 310px;
+    margin: 10px auto;
     background-color: var(--card-bg);
-    border-radius: 24px; /* 更圆润的圆角 */
-    box-shadow: var(--card-shadow); /* 应用强大的阴影 */
-    
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
-    padding: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.6); /* 淡淡的白边，增加立体感 */
-    pointer-events: auto; /* 确保卡片内部可以点击 */
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    pointer-events: auto;
   }
 
-  /* --- 关键：允许通过头部拖动窗口 --- */
+  /* 顶部拖拽栏 */
   .header {
-    -webkit-app-region: drag; /* 1. 这里是核心，把这个区域变成拖拽把手 */
-    cursor: move;             /* 2. 鼠标悬停显示移动图标 */
+    -webkit-app-region: drag; /* 开启拖拽 */
+    cursor: move;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 15px;
-    user-select: none;        /* 3. 防止拖拽时选中文字 */
+    padding-bottom: 12px;
   }
 
   .title-group {
@@ -65,76 +62,67 @@
   }
 
   .title-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-main);
   }
 
   .collapse-btn {
-    -webkit-app-region: no-drag; /* 4. 这里的按钮要禁用拖拽，否则点击无效 */
+    -webkit-app-region: no-drag; /* 禁用拖拽，允许点击 */
     background: none;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     padding: 2px 6px;
     border-radius: 6px;
   }
   .collapse-btn:hover { background-color: rgba(0,0,0,0.05); }
 
-  /* 计时器主体区域 */
+  /* 计时器主体 */
   .timer-body {
-    background-color: white;
-    border-radius: 16px;
-    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 14px;
+    padding: 16px;
     text-align: center;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.03);
     margin-bottom: 12px;
   }
 
-  .task-tag {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-bottom: 8px;
-  }
-
   .timer-display {
-    font-size: 56px; /* 更大的数字 */
+    font-size: 48px;
     font-weight: 700;
     color: var(--text-main);
-    font-family: 'Courier New', Courier, monospace; /* 等宽字体，防止数字跳动 */
-    margin: 10px 0 20px 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 8px 0 16px 0;
     line-height: 1;
   }
 
   .controls {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .btn {
-    -webkit-app-region: no-drag; /* 核心：按钮区域禁止拖拽 */
+    -webkit-app-region: no-drag;
     border: none;
-    padding: 10px 24px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 8px 20px;
+    border-radius: 16px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
   }
 
-  .btn-start { background-color: var(--accent-color); color: white; }
-  .btn-start:hover { background-color: #889f8b; transform: translateY(-1px); }
-  
+  .btn-start { background-color: var(--accent-color); color: #ffffff; }
+  .btn-start:hover { background-color: #889f8b; }
+  .btn-start:active { transform: scale(0.98); }
+
   .btn-reset { background-color: var(--reset-color); color: var(--text-main); }
   .btn-reset:hover { background-color: #e2e6ea; }
 
-  /* 待办事项输入区域 */
+  /* 待办事项 */
   .todo-section {
     position: relative;
     -webkit-app-region: no-drag;
@@ -142,23 +130,22 @@
 
   .todo-input {
     width: 100%;
-    background-color: white;
-    border: 1px solid rgba(0,0,0,0.08);
+    background-color: #ffffff;
+    border: 1px solid rgba(0,0,0,0.06);
     color: var(--text-main);
-    padding: 12px 16px 12px 36px;
-    border-radius: 12px;
-    font-size: 13px;
+    padding: 10px 14px 10px 32px;
+    border-radius: 10px;
+    font-size: 12px;
     outline: none;
-    transition: border-color 0.2s;
   }
   .todo-input:focus { border-color: var(--accent-color); }
 
   .todo-icon {
     position: absolute;
-    left: 12px;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 16px;
+    font-size: 14px;
   }
 </style>
